@@ -6,7 +6,7 @@ const CodeEditor = ({ projectId, selectedFile }) => {
     const [fileContent, setFileContent] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    // Load file content when a new file is selected
+
     useEffect(() => {
         if (selectedFile && projectId) {
             loadFileContent();
@@ -15,31 +15,30 @@ const CodeEditor = ({ projectId, selectedFile }) => {
 
     // Load file content
     const loadFileContent = async () => {
+        if (!selectedFile) return;
         const token = localStorage.getItem("accessToken");
-        
+    
         try {
             setIsLoading(true);
             const response = await fetch(`http://127.0.0.1:8000/api/projects/${projectId}/files/${selectedFile.id}/content/`, {
                 method: "GET",
                 headers: {
-                    "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`,
                 },
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch file content');
-            }
-
-            const content = await response.text();
-            setFileContent(content);
+    
+            if (!response.ok) throw new Error(`Error ${response.status}: Failed to fetch file content`);
+    
+            const data = await response.json();
+            setFileContent(data.content);  // Use `data.content` instead of `await response.text()`
         } catch (error) {
             console.error("Error loading file:", error);
-            toast.error("Failed to load file content");
+            toast.error(error.message);
         } finally {
             setIsLoading(false);
         }
     };
+    
 
     // Save file content
     const saveFile = async () => {
