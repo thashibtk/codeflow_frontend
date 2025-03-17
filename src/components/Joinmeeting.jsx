@@ -1,76 +1,69 @@
 import React, { useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, Alert } from "react-bootstrap";
+import axios from "axios";
 
 const JoinMeetingModal = ({ show, handleClose }) => {
   const [meetingCode, setMeetingCode] = useState("");
+  const [error, setError] = useState("");
 
-  const handleJoin = () => {
-    console.log("Joining meeting with code:", meetingCode);
-    handleClose();
-  };
+  const handleJoin = async () => {
+    if (!meetingCode.trim()) {
+      setError("Meeting code is required.");
+      return;
+    }
 
-  // Dark theme styles
-  const darkThemeStyles = {
-    modal: {
-      backgroundColor: "#212529",
-      color: "#f8f9fa",
-      borderRadius: "8px"
-    },
-    header: {
-      backgroundColor: "#343a40",
-      borderBottom: "1px solid #495057",
-      color: "#f8f9fa",
-      paddingTop: "15px",
-      paddingBottom: "15px"
-    },
-    title: {
-      color: "#f8f9fa",
-      fontWeight: "600"
-    },
-    body: {
-      backgroundColor: "#212529",
-      padding: "24px"
-    },
-    formLabel: {
-      color: "#e9ecef",
-      fontWeight: "500"
-    },
-    formControl: {
-      backgroundColor: "#2b3035",
-      color: "#e9ecef",
-      border: "1px solid #495057"
-    },
-    button: {
-      fontWeight: "500",
-      marginTop: "8px",
-      marginBottom: "8px"
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setError("You need to log in first.");
+        return;
+      }
+
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/meetings/join/",
+        { meeting_code: meetingCode },
+        config
+      );
+
+      console.log("Joined meeting:", response.data);
+      alert("Successfully joined the meeting!");
+      setTimeout(() => {
+        handleClose();
+        window.location.reload(); // ✅ Reloads the whole page
+      }, 500);
+
+      setError("");
+      handleClose();
+    } catch (error) {
+      console.error("Error joining meeting:", error);
+      setError("Invalid meeting code or an error occurred.");
     }
   };
 
   return (
-    <Modal show={show} onHide={handleClose} centered contentClassName="border-0">
-      <div style={darkThemeStyles.modal}>
-        <Modal.Header closeButton style={darkThemeStyles.header}>
-          <Modal.Title style={darkThemeStyles.title}>Join Meeting</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="bg-dark border-secondary">
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Meeting Code</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter meeting code"
-                className="bg-secondary text-light"
-                value={meetingCode}
-                onChange={(e) => setMeetingCode(e.target.value)}
-              />
-            </Form.Group>
-            <Button variant="success" onClick={handleJoin} className="w-100">
-              Join Meeting
-            </Button>
-          </Form>
-        </Modal.Body>
-      </div>
+    <Modal show={show} onHide={handleClose} centered>
+      <Modal.Header closeButton className="bg-dark text-light">
+        <Modal.Title>Join Meeting</Modal.Title>
+      </Modal.Header>
+      <Modal.Body className="bg-dark text-light">
+        {error && <Alert variant="danger">{error}</Alert>}
+        <Form>
+          <Form.Group className="mb-3">
+            <Form.Label>Meeting Code</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Enter meeting code"
+              className="bg-secondary text-light"
+              value={meetingCode}
+              onChange={(e) => setMeetingCode(e.target.value)}
+            />
+          </Form.Group>
+          <Button variant="success" onClick={handleJoin} className="w-100">
+            Join Meeting
+          </Button>
+        </Form>
+      </Modal.Body>
     </Modal>
   );
 };

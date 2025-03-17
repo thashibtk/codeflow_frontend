@@ -1,28 +1,30 @@
 import React, { useState } from "react";
 import { Navbar, Nav, Container, Button, Dropdown } from "react-bootstrap";
 import { FaUserCircle } from "react-icons/fa";
-import { useLocation } from "react-router-dom"; // ✅ Import useLocation
+import { useLocation } from "react-router-dom";
 import NewProjectModal from "./NewProject";
 import NewMeetingModal from "./NewMeeting";
-import JoinMeetingModal from "./Joinmeeting"; // ✅ Separate Join Meeting Modal
+import JoinMeetingModal from "./Joinmeeting"; 
 import LogoutComponent from "./Logout";
+import { Link } from "react-router-dom";
 
-const CodeFlowNavbar = () => {
-  const location = useLocation(); // ✅ Get current route
+const CodeFlowNavbar = ({ refreshDashboard }) => {
+  const location = useLocation();
+  const projectIdMatch = location.pathname.match(/\/project\/([^\/]+)/);
+  const projectId = projectIdMatch ? projectIdMatch[1] : null;
+
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [showJoinMeetingModal, setShowJoinMeetingModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  
-  const isProjectPage = location.pathname === "/projectedit" || 
-                      location.pathname === "/projectdetails" || 
-                      location.pathname.startsWith("/project/");
+  const isProjectPage = location.pathname.startsWith("/project/");
+
   return (
     <>
       <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm py-3 w-100">
         <Container fluid>
-          <Navbar.Brand href="#" className="fw-bold text-uppercase text-light">
+          <Navbar.Brand as={Link} to="/dashboard" className="fw-bold text-uppercase text-light">
             <span style={{ color: "#0d6efd" }}>Code</span>Flow
           </Navbar.Brand>
           <Nav className="ms-auto d-flex align-items-center">
@@ -52,10 +54,10 @@ const CodeFlowNavbar = () => {
             )}
             <Dropdown>
               <Dropdown.Toggle variant="outline-light" id="dropdown-basic" className="d-flex align-items-center rounded-pill">
-                <FaUserCircle size={22} className="me-2" /> Profile
+                <FaUserCircle size={22} className="me-2" /> 
               </Dropdown.Toggle>
               <Dropdown.Menu className="shadow border-0">
-                <Dropdown.Item href="#">Settings</Dropdown.Item>
+                <Dropdown.Item as={Link} to="/profile">Profile</Dropdown.Item>
                 <Dropdown.Item onClick={() => setShowLogoutModal(true)}>Logout</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
@@ -64,19 +66,18 @@ const CodeFlowNavbar = () => {
       </Navbar>
 
       {/* Modals */}
-      <NewProjectModal 
-        show={showProjectModal} 
-        handleClose={() => setShowProjectModal(false)} 
-      />
+      <NewProjectModal show={showProjectModal} handleClose={() => setShowProjectModal(false)} />
       {isProjectPage ? (
         <NewMeetingModal 
           show={showMeetingModal} 
           handleClose={() => setShowMeetingModal(false)} 
+          projectId={projectId}  
         />
       ) : (
         <JoinMeetingModal 
           show={showJoinMeetingModal} 
           handleClose={() => setShowJoinMeetingModal(false)} 
+          refreshDashboard={refreshDashboard} // ✅ Pass refresh function
         />
       )}
       <LogoutComponent showModal={showLogoutModal} handleClose={() => setShowLogoutModal(false)} />

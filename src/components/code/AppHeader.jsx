@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { FaCode, FaPlay, FaArrowLeft } from "react-icons/fa";
 
@@ -13,7 +13,6 @@ const AppHeader = ({ addToLogs, executeCode, selectedFile }) => {
     const token = localStorage.getItem("accessToken");
 
     if (!token) {
-      // Use the addToLogs function with the proper tab name
       addToLogs("terminal", "No token found. User might not be logged in.");
       setProjectName("Unauthorized");
       return;
@@ -54,13 +53,48 @@ const AppHeader = ({ addToLogs, executeCode, selectedFile }) => {
     window.history.back();
   };
 
-  const handleRun = () => {
+  const fetchLatestFileContent = async () => {
+    if (!selectedFile) return null;
+    
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
+
+    try {
+      const projectId = selectedFile.project_id || window.location.pathname.split('/').filter(Boolean)[1];
+      const response = await fetch(`http://127.0.0.1:8000/api/projects/${projectId}/files/${selectedFile.id}/content/`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch latest file content`);
+
+      const data = await response.json();
+      return data.content;
+    } catch (error) {
+      addToLogs("terminal", `❌ Error refreshing file content: ${error.message}`);
+      return null;
+    }
+  };
+
+  const handleRun = async () => {
     if (!selectedFile) {
       addToLogs("terminal", "❌ Please select a file to run first.");
       return;
     }
 
+    // Trigger the run-code event to clear logs
+    window.dispatchEvent(new CustomEvent('run-code'));
+    
+    // Add initial run message after clearing logs
     addToLogs("terminal", `Running file: ${selectedFile.name}...`);
+
+    // Get latest file content
+    const latestContent = await fetchLatestFileContent();
+    if (!latestContent) {
+      addToLogs("terminal", "❌ Could not retrieve the latest file content.");
+      return;
+    }
     
     // Determine language based on file extension
     const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
@@ -86,7 +120,7 @@ const AppHeader = ({ addToLogs, executeCode, selectedFile }) => {
     }
     
     // Call the executeCode function with the file's content
-    executeCode(language, selectedFile.content);
+    executeCode(language, latestContent);
   };
 
   return (

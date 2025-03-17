@@ -14,12 +14,15 @@ import {
   FaPlus,
   FaTrash,
   FaExclamationTriangle
-} from "react-icons/fa";
+} from "react-icons/fa";  
 import { toast } from 'react-toastify';
 
 const FileExplorer = ({ 
   projectId, 
-  onFileSelect 
+  onFileSelect,
+  selectedFile,
+  executeCode,
+  addToLogs
 }) => {
   const [files, setFiles] = useState([]);
   const [error, setError] = useState(null);
@@ -118,6 +121,76 @@ const FileExplorer = ({
     return rootFiles;
   };
 
+  const fetchLatestFileContent = async () => {
+    if (!selectedFile) return null;
+    
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
+
+    try {
+      const projectId = selectedFile.project_id || window.location.pathname.split('/').filter(Boolean)[1];
+      const response = await fetch(`http://127.0.0.1:8000/api/projects/${projectId}/files/${selectedFile.id}/content/`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch latest file content`);
+
+      const data = await response.json();
+      return data.content;
+    } catch (error) {
+      addToLogs("terminal", `❌ Error refreshing file content: ${error.message}`);
+      return null;
+    }
+  };
+
+  const handleRunCode = async () => {
+    if (!selectedFile) {
+      toast.error("Please select a file to run first.");
+      return;
+    }
+
+  // Trigger the run-code event to clear logs
+  window.dispatchEvent(new CustomEvent('run-code'));
+    
+  // Add initial run message after clearing logs
+  addToLogs("terminal", `Running file: ${selectedFile.name}...`);
+
+  // Get latest file content
+  const latestContent = await fetchLatestFileContent();
+  if (!latestContent) {
+    addToLogs("terminal", "❌ Could not retrieve the latest file content.");
+    return;
+  }
+  
+  // Determine language based on file extension
+  const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
+  let language;
+  
+  switch (fileExtension) {
+    case 'js':
+    case 'jsx':
+      language = 'javascript';
+      break;
+    case 'py':
+      language = 'python';
+      break;
+    case 'java':
+      language = 'java';
+      break;
+    case 'cpp':
+    case 'cc':
+      language = 'cpp';
+      break;
+    default:
+      language = fileExtension;
+  }
+  
+  // Call the executeCode function with the file's content
+  executeCode(language, latestContent);
+};
+
   // Check for duplicate file/folder names
   const checkDuplicateName = (name, parentFolderId) => {
     // For root level items
@@ -174,7 +247,7 @@ const FileExplorer = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             name: newItemName,
@@ -186,17 +259,26 @@ const FileExplorer = ({
         }
       );
   
-      const data = await response.json();
+      // ✅ Read the response body only once
+      const data = await response.json().catch(() => null);
   
       if (!response.ok) {
         console.error("❌ Error Response:", data);
-        const errorMsg = data.error || `Failed to create ${isFolder ? "folder" : "file"}`;
+  
+        let errorMsg = "Failed to create file/folder.";
+        if (response.status === 403) {
+          errorMsg = "You do not have permission to add files.";
+        } else if (response.status === 400 && data?.error) {
+          errorMsg = data.error; // Show backend error message
+        }
+  
         setError(errorMsg);
         setShowError(true);
         toast.error(errorMsg);
         return;
       }
   
+      // ✅ Success case
       fetchFiles();
       setCreationMode(null);
       setNewItemName("");
@@ -211,6 +293,7 @@ const FileExplorer = ({
       toast.error(errorMsg);
     }
   };
+  
   
   
   const deleteItem = async () => {
@@ -281,10 +364,6 @@ const FileExplorer = ({
       [folderId]: true // Ensure folder is expanded when creating inside
     }));
     setError(null);
-  };
-
-  const handleRunCode = () => {
-    toast.info('Code running functionality coming soon!');
   };
 
   // Recursive component to render file tree
@@ -452,6 +531,7 @@ const FileExplorer = ({
             className="icon-btn" 
             title="Run Code"
             onClick={handleRunCode}
+            disabled={!selectedFile}
           >
             <FaPlay />
           </Button>

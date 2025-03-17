@@ -1,0 +1,21 @@
+/* Custom placeholder styling for dark theme inputs */
+.custom-placeholder::placeholder {
+    color: #adb5bd !important; /* Medium-light gray that's visible on dark backgrounds */
+    opacity: 1;
+  }
+  
+  /* For Microsoft Edge browser */
+  .custom-placeholder::-ms-input-placeholder {
+    color: #adb5bd !important;
+  }
+  
+  /* For Firefox browser */
+  .custom-placeholder::-moz-placeholder {
+    color: #adb5bd !important;
+    opacity: 1;
+  }
+  
+  /* Custom styling for invalid feedback in dark mode */
+  .custom-invalid-feedback {
+    color: #f77 !important;
+  }

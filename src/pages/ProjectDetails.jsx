@@ -1,15 +1,19 @@
+// Main ProjectDetails component
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import CollaboratorsSection from '../components/CollabSection';
+import CommentsSection from '../components/CommentSection';
 
 const ProjectDetails = ({ onNavigateBack, onNavigateToEditor }) => {
-  // Get project ID from URL params - notice we're extracting 'id' now, not 'projectId'
+  // Get project ID from URL params
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Try to get projectId from multiple possible sources, starting with 'id' from params
+  // Try to get projectId from multiple possible sources
   const projectId = params.id || 
                     params.projectId || 
                     (location.state && location.state.projectId) || 
@@ -43,8 +47,20 @@ const ProjectDetails = ({ onNavigateBack, onNavigateToEditor }) => {
         };
 
         console.log("Fetching project with ID:", projectId);
-        const response = await axios.get(`http://127.0.0.1:8000/api/projects/${projectId}/`, config);
-        setProject(response.data);
+        
+        // Fetch project details
+        const projectResponse = await axios.get(`http://127.0.0.1:8000/api/projects/${projectId}/`, config);
+        console.log("Project data received:", projectResponse.data);
+        
+        // Fetch collaborators from the correct endpoint
+        const collaboratorsResponse = await axios.get(`http://127.0.0.1:8000/api/projects/${projectId}/collaborators/`, config);
+        console.log("Collaborators received:", collaboratorsResponse.data);
+        
+        // Set project data with collaborators
+        setProject({
+          ...projectResponse.data,
+          collaborators: collaboratorsResponse.data || []
+        });
       } catch (error) {
         console.error("Error fetching project details:", error);
         if (error.response && error.response.status === 404) {
@@ -72,8 +88,7 @@ const ProjectDetails = ({ onNavigateBack, onNavigateToEditor }) => {
     if (onNavigateBack) {
       onNavigateBack();
     } else {
-      // Fallback navigation if prop isn't provided
-      navigate('/projects');
+      navigate('/dashboard');
     }
   };
 
@@ -83,6 +98,27 @@ const ProjectDetails = ({ onNavigateBack, onNavigateToEditor }) => {
     } else {
       // Fallback navigation if prop isn't provided
       navigate(`/editor/${projectId}`);
+    }
+  };
+
+  const refreshCollaborators = async () => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return;
+
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
+      
+      // Refresh collaborators list
+      const collaboratorsResponse = await axios.get(`http://127.0.0.1:8000/api/projects/${projectId}/collaborators/`, config);
+      
+      setProject(prev => ({
+        ...prev,
+        collaborators: collaboratorsResponse.data || []
+      }));
+    } catch (error) {
+      console.error("Error refreshing collaborators:", error);
     }
   };
 
@@ -125,6 +161,7 @@ const ProjectDetails = ({ onNavigateBack, onNavigateToEditor }) => {
 
   return (
     <div className="container-fluid bg-dark text-white py-4">
+      
       <div className="row">
         <div className="col-12 col-lg-8 mx-auto">
           <div className="d-flex justify-content-between mb-4">
@@ -158,44 +195,16 @@ const ProjectDetails = ({ onNavigateBack, onNavigateToEditor }) => {
               </div>
             </div>
           </div>
-          <div className="card bg-dark border-light mb-4">
-            <div className="card-header bg-dark border-light">
-              <h3 className="text-white">Collaborators</h3>
-            </div>
-            <div className="card-body">
-              {project.collaborators && project.collaborators.length > 0 ? (
-                <div className="row">
-                  {project.collaborators.map((collaborator) => (
-                    <div key={collaborator.id} className="col-12 col-md-6 col-lg-4 mb-3">
-                      <div className="d-flex align-items-center p-2 border border-secondary rounded bg-dark">
-                        <img 
-                          src={collaborator.avatar || 'https://via.placeholder.com/40'} 
-                          alt={collaborator.name} 
-                          className="rounded-circle me-3" 
-                          width="40" 
-                          height="40"
-                        />
-                        <div>
-                          <h5 className="mb-0 text-white">{collaborator.name}</h5>
-                          <small className="text-light">{collaborator.role || "Collaborator"}</small>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-light">No collaborators yet.</p>
-              )}
-            </div>
-          </div>
-          <div className="card bg-dark border-light">
-            <div className="card-header bg-dark border-light">
-              <h3 className="text-white">Comments (Coming Soon)</h3>
-            </div>
-            <div className="card-body">
-              <p className="text-light">The comment section will be available in a future update.</p>
-            </div>
-          </div>
+          
+          {/* Collaborators Section Component */}
+          <CollaboratorsSection 
+            projectId={projectId} 
+            collaborators={project.collaborators}
+            onCollaboratorsChange={refreshCollaborators}
+          />
+          
+          {/* Comments Section Component */}
+          <CommentsSection />
         </div>
       </div>
     </div>

@@ -23,26 +23,40 @@ const LoginComponent = () => {
     e.preventDefault();
     setError("");
     setSuccessMessage("");
-
+  
     if (!email || !password) {
       setError("Email and password are required!");
       return;
     }
-
+  
     try {
       const response = await axios.post("http://127.0.0.1:8000/api/users/login/", {
         email,
         password,
       });
-
+  
       // Store JWT tokens
       localStorage.setItem("accessToken", response.data.access);
       localStorage.setItem("refreshToken", response.data.refresh);
-
+  
       console.log("Login successful:", response.data);
       navigate("/dashboard"); // Redirect to Dashboard after login
     } catch (error) {
-      setError(error.response?.data?.error || "Login failed!");
+      // Handle different error formats
+      if (error.response && error.response.data) {
+        if (error.response.data.non_field_errors) {
+          // Handle non_field_errors array
+          setError(error.response.data.non_field_errors[0]);
+        } else if (error.response.data.error) {
+          // Handle direct error message
+          setError(error.response.data.error);
+        } else {
+          // Handle other error formats
+          setError("Login failed. Please check your credentials.");
+        }
+      } else {
+        setError("Cannot connect to server. Please try again later.");
+      }
     }
   };
 
