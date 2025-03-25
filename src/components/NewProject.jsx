@@ -41,27 +41,44 @@ const NewProjectModal = ({ show, handleClose, authToken }) => {
   const handleJoinProject = async () => {
     setError(null);
     setSuccessMessage(null);
+  
+    const token = localStorage.getItem("accessToken"); // Retrieve token
+  
+    if (!token) {
+      setError("No authentication token found. Please log in.");
+      return;
+    }
+  
     try {
       const response = await axios.post(
         "http://127.0.0.1:8000/api/projects/join/",
         { project_code: projectCode },
-        { headers: { Authorization: `Bearer ${authToken}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+  
       setSuccessMessage("Joined project successfully!");
       setProjectCode("");
       handleClose();
+  
+      // Show an alert and refresh the page
+      setTimeout(() => {
+        alert("Joined project successfully!");
+        window.location.reload();
+      }, 500); // Delay to allow modal to close before refreshing
     } catch (error) {
       setError(error.response?.data?.detail || "Failed to join project.");
     }
   };
+  
+  
 
   const darkThemeStyles = {
     modal: { backgroundColor: "#212529", color: "#f8f9fa", borderRadius: "8px" },
     header: { backgroundColor: "#343a40", borderBottom: "1px solid #495057", color: "#f8f9fa" },
     title: { color: "#f8f9fa", fontWeight: "600" },
     body: { backgroundColor: "#212529", padding: "24px" },
-    formLabel: { color: "#e9ecef", fontWeight: "500" },
-    formControl: { backgroundColor: "#2b3035", color: "#e9ecef", border: "1px solid #495057" },
+    formLabel: { color: "#e1e7f0", fontWeight: "500" },
+    formControl: { backgroundColor: "#6f7a8c", color: "#e9ecef", border: "1px solid #495057" },
     button: { fontWeight: "500", marginTop: "8px", marginBottom: "8px" },
     divider: { backgroundColor: "#495057", height: "1px", margin: "24px 0" },
     sectionTitle: { color: "#e9ecef", marginBottom: "16px", fontSize: "1.1rem" },

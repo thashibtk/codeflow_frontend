@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [copiedMeetingId, setCopiedMeetingId] = useState(null);
   
   // Meeting deletion state
   const [showDeleteMeetingModal, setShowDeleteMeetingModal] = useState(false);
@@ -75,20 +76,41 @@ const Dashboard = () => {
   }, [navigate]);
 
   // Format date and time for better display
-  const formatDateTime = (dateTimeStr) => {
-    if (!dateTimeStr) return "Not scheduled";
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
     
-    const date = new Date(dateTimeStr);
-    if (isNaN(date.getTime())) return "Invalid date";
-    
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }).format(date);
+    try {
+      // Handle ISO format with T and Z (2025-03-17T16:30:00Z)
+      if (dateString.includes('T')) {
+        // Split the parts - strip off any Z at the end which indicates UTC
+        const cleanDateString = dateString.replace('Z', '');
+        const [datePart, timePart] = cleanDateString.split('T');
+        const [year, month, day] = datePart.split('-');
+        let [hours, minutes] = timePart ? timePart.split(':') : [0, 0];
+        
+        // Convert to 12-hour format with AM/PM for better readability
+        let period = "AM";
+        if (parseInt(hours) >= 12) {
+          period = "PM";
+          if (parseInt(hours) > 12) {
+            hours = String(parseInt(hours) - 12).padStart(2, '0');
+          }
+        }
+        if (hours === "00") hours = "12";
+        
+        // Format in a user-friendly way
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        
+        return `${monthNames[parseInt(month)-1]} ${parseInt(day)}, ${year} at ${hours}:${minutes} ${period}`;
+      } else {
+        // For other formats, just return as is
+        return dateString;
+      }
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString; // Return original string if parsing fails
+    }
   };
 
   // Format date-time for input field
@@ -243,8 +265,16 @@ const Dashboard = () => {
       setError(error.response?.data?.message || "Failed to join meeting. Please try again.");
     }
   };
-  
-  
+
+  const handleCopyCode = (meetingId, code) => {
+    navigator.clipboard.writeText(code)
+      .then(() => {
+        setCopiedMeetingId(meetingId); // Show "Copied!" tooltip
+        setTimeout(() => setCopiedMeetingId(null), 2000); // Hide after 2 seconds
+      })
+      .catch(err => console.error("Failed to copy:", err));
+  };
+
 
   if (loading) {
     return (
@@ -314,7 +344,6 @@ const Dashboard = () => {
           <Card bg="dark" text="light" className="shadow-sm">
             <Card.Header className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Upcoming Meetings</h5>
-              <Button variant="outline-light" size="sm">View Calendar</Button>
             </Card.Header>
             <Card.Body>
               {meetings.length === 0 ? (
@@ -355,6 +384,23 @@ const Dashboard = () => {
                         </svg>
                         {formatDateTime(meeting.scheduled_time)}
                       </Card.Text>
+                      <div className="d-flex align-items-center justify-content-between text-light opacity-75 border rounded border-dark p-2">
+                      <Card.Text>
+                        <span className="text-light me-2">Meet Code:</span>
+                        <span className="fw-bold font-monospace text-white">{meeting.meeting_code}</span>
+                      </Card.Text>
+                      <div className="position-relative">
+                        <button className="btn btn-sm btn-outline-light" onClick={() => handleCopyCode(meeting.id, meeting.meeting_code)}>
+                          <i className="bi bi-clipboard me-1"></i> Copy
+                        </button>
+                        {copiedMeetingId === meeting.id && (
+                    <div className="position-absolute top-100 start-50 translate-middle-x mt-2 bg-success text-white py-1 px-2 rounded small">
+                      Copied!
+                    </div>
+                  )}
+                      </div>
+                    </div>
+
                       {meeting.description && (
                         <Card.Text className="text-light opacity-75">
                           {meeting.description}

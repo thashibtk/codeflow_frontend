@@ -5,6 +5,7 @@ import { Navbar } from 'react-bootstrap';
 import collabImage from "../assets/collab.jpg";
 import livechat from "../assets/livecollab.jpg";
 import meetingimg from "../assets/meeting.jpg";
+import profileavatar from "../assets/profileavatar.png";
 
 const CodeFlowLanding = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -208,7 +209,7 @@ const CodeFlowLanding = () => {
                 <p>"CodeFlow has transformed how our distributed team works together. Real-time collaboration and integrated meetings have cut our development time in half."</p>
               </div>
               <div className="testimonial-author">
-                <img src="https://via.placeholder.com/60x60" alt="Avatar" />
+                <img src={profileavatar} alt="Avatar" />
                 <div>
                   <h4>Sarah Johnson</h4>
                   <p>CTO, TechInnovate</p>
@@ -221,7 +222,7 @@ const CodeFlowLanding = () => {
                 <p>"The live chat integration directly with our codebase has dramatically improved our team communication and problem-solving speed."</p>
               </div>
               <div className="testimonial-author">
-                <img src="https://via.placeholder.com/60x60" alt="Avatar" />
+              <img src={profileavatar} alt="Avatar" />
                 <div>
                   <h4>David Chen</h4>
                   <p>Lead Developer, Stackwave</p>
@@ -234,7 +235,7 @@ const CodeFlowLanding = () => {
                 <p>"As a remote-first company, the virtual meetings and collaboration features in CodeFlow have become essential to maintaining our productivity."</p>
               </div>
               <div className="testimonial-author">
-                <img src="https://via.placeholder.com/60x60" alt="Avatar" />
+              <img src={profileavatar}alt="Avatar" />
                 <div>
                   <h4>Alicia Rivera</h4>
                   <p>Engineering Manager, DevFlow</p>

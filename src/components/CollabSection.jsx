@@ -68,6 +68,7 @@ const CollaboratorsSection = ({ projectId, onCollaboratorsChange }) => {
       if (onCollaboratorsChange) {
         onCollaboratorsChange();
       }
+      
     } catch (error) {
       console.error("Error fetching collaborators:", error);
     }
@@ -252,9 +253,11 @@ const CollaboratorsSection = ({ projectId, onCollaboratorsChange }) => {
                           {isOwnerCollab ? (
                             <span className="badge bg-warning text-dark">Owner</span>
                           ) : (
-                            <span className={`badge ${collaborator.permission === 'edit' ? 'bg-primary' : 'bg-secondary'}`}>
-                              {collaborator.permission === 'edit' ? 'Editor' : 'Viewer'}
+                            <span className={`badge ${collaborator.permission?.toLowerCase() === 'edit' ? 'bg-primary' : 'bg-secondary'}`}>
+                              {collaborator.permission?.toLowerCase() === 'edit' ? 'Editor' : 'Viewer'}
                             </span>
+                            
+
                           )}
                         </td>
                         {isOwner && (
